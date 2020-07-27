@@ -46,8 +46,11 @@ namespace util {
 
 template<class T> using value_type_t = typename std::decay<T>::type::value_type;
 template<class T> using decay_t = typename std::decay<T>::type;
-template<class... TN> using result_of_t = typename std::result_of<TN...>::type;
-
+#if _HAS_CXX17
+template<class F, class... TN> using invoke_result_t = typename std::invoke_result<F, TN...>::type;
+#else
+template<class F, class... TN> using invoke_result_t = typename std::result_of<F(TN...)>::type;
+#endif
 template<class T, std::size_t size>
 std::vector<T> to_vector(const T (&arr) [size]) {
     return std::vector<T>(std::begin(arr), std::end(arr));
@@ -1011,12 +1014,10 @@ struct is_hashable
 template<typename T>
 struct is_hashable<T,
     typename rxu::types_checked_from<
-        typename filtered_hash<T>::result_type,
-        typename filtered_hash<T>::argument_type,
-        typename std::result_of<filtered_hash<T>(T)>::type>::type>
+    typename filtered_hash<T>::result_type,
+    typename filtered_hash<T>::argument_type,
+    typename std::invoke_result<filtered_hash<T>, T>::type>::type>
     : std::true_type {};
-
-}
 
 #define RXCPP_UNWIND(Name, Function) \
     RXCPP_UNWIND_EXPLICIT(uwfunc_ ## Name, Name, Function)
